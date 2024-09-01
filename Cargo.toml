@@ -5,6 +5,7 @@ authors = ["emersion <contact@emersion.fr>"]
 edition = "2021"
 
 [dependencies]
-pest = "2.0"
-pest_derive = "2.0"
+anyhow = "1"
+pest = "2"
+pest_derive = "2"
 structopt = "0.3"
