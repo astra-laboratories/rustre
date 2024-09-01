@@ -2,7 +2,7 @@
 name = "rustre"
 version = "0.1.0"
 authors = ["emersion <contact@emersion.fr>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 pest = "2.0"

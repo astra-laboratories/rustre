@@ -29,79 +29,6 @@ use std::io::{Write, Result};
 use crate::nast::*;
 use crate::typer::type_of_const;
 
-fn format_const(w: &mut Write, c: &Const) -> Result<()> {
-	match c {
-		Const::Unit => write!(w, "()"),
-		Const::Bool(b) => write!(w, "{}", b),
-		Const::Int(i) => write!(w, "{}", i),
-		// Need to always use a dot for Rust to understand it's a float constant
-		Const::Float(f) => write!(w, "{:?}", f),
-		Const::String(s) => write!(w, "\"{}\"", s), // TODO: escaping
-	}
-}
-
-fn format_atom(w: &mut Write, atom: &Atom) -> Result<()> {
-	match atom {
-		Atom::Const(c) => format_const(w, c),
-		Atom::Ident(ident) => write!(w, "{}", ident),
-	}
-}
-
-fn format_bexpr(w: &mut Write, bexpr: &Bexpr) -> Result<()> {
-	match bexpr {
-		Bexpr::Unop(op, e) => {
-			write!(w, "{} ", match op {
-				Unop::Minus | Unop::MinusDot => "-",
-				Unop::Not => "!",
-			})?;
-			format_bexpr(w, e)
-		},
-		Bexpr::Binop(op, exprs) => {
-			let (e1, e2): &(Bexpr, Bexpr) = &*exprs;
-			format_bexpr(w, e1)?;
-			write!(w, " {} ", match op {
-				Binop::Plus | Binop::PlusDot => "+",
-				Binop::Minus | Binop::MinusDot => "-",
-				Binop::Mult | Binop::MultDot => "*",
-				Binop::Div | Binop::DivDot => "/",
-				Binop::Lt => "<",
-				Binop::Gt => ">",
-				Binop::Leq => "<=",
-				Binop::Geq => ">=",
-				Binop::Eq => "==",
-				Binop::And => "&&",
-				Binop::Or => "||",
-			})?;
-			format_bexpr(w, e2)
-		},
-		Bexpr::If(iff) => {
-			let (cond, body, else_part): &(Bexpr, Bexpr, Bexpr) = &*iff;
-			write!(w, "if ")?;
-			format_bexpr(w, cond)?;
-			write!(w, " {{ ")?;
-			format_bexpr(w, body)?;
-			write!(w, " }} else {{ ")?;
-			format_bexpr(w, else_part)?;
-			write!(w, " }}")
-		},
-		Bexpr::Tuple(vex) => {
-			match vex.split_first() {
-				Some((fst, elems)) => {
-					write!(w, "(")?;
-					format_bexpr(w, fst)?;
-					for e in elems { // skipping #1
-						write!(w, ", ")?;
-						format_bexpr(w, e)?;
-					}
-					write!(w, ")")
-				},
-				None => unreachable!(),
-			}
-		},
-		Bexpr::Atom(atom) => format_atom(w, atom),
-	}
-}
-
 fn format_expr(w: &mut Write, e: &Expr, dest: &[String], mems: &HashMap<String, NodeMemory>) -> Result<()> {
 	match e {
 		Expr::Call{name, args} => {
@@ -151,30 +78,6 @@ fn format_equation(w: &mut Write, eq: &Equation, mems: &HashMap<String, NodeMemo
 	write!(w, " = ")?;
 	format_expr(w, &eq.body, &eq.names, mems)?;
 	write!(w, ";\n")
-}
-
-fn get_type(typ: &Type) -> String {
-	match typ {
-		Type::Unit => "()".to_string(),
-		Type::Bool => "bool".to_string(),
-		Type::Int => "i32".to_string(),
-		Type::Float => "f32".to_string(),
-		Type::String => "String".to_string(),
-		Type::Tuple(types) => {
-			let mut s = String::new();
-			s += "(";
-			let mut first = true;
-			for t in types {
-				if !first {
-					s += ", ";
-				}
-				first = false;
-				s += &get_type(t);
-			}
-			s += ")";
-			s
-		},
-	}
 }
 
 fn format_arg_list(w: &mut Write, args: &HashMap<String, Type>, with_name: bool, with_typ: bool) -> Result<()> {
@@ -234,14 +137,6 @@ fn format_struct(w: &mut Write, name: &str, fields: &HashMap<String, String>, in
 	write!(w, "\t\t}}\n")?;
 	write!(w, "\t}}\n")?;
 	write!(w, "}}\n\n")
-}
-
-fn capitalize(s: &str) -> String {
-	let mut c = s.chars();
-	match c.next() {
-		None => String::new(),
-		Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
-	}
 }
 
 fn bexpr_from_vec(v: Vec<Bexpr>) -> Bexpr {

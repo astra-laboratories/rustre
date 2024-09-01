@@ -1,15 +1,17 @@
-extern crate pest;
-#[macro_use]
-extern crate pest_derive;
+#![deny(clippy::all)]
+#![deny(clippy::pedantic)]
+#![deny(clippy::dbg_macro)]
+#![deny(unused_crate_dependencies)]
 
 mod ast;
 mod nast;
-mod normalizer;
+//mod normalizer;
 mod parser;
-mod rustfmt;
-mod sequentializer;
-mod typer;
+//mod rustfmt;
+//mod sequentializer;
+//mod typer;
 
+/*
 use crate::normalizer::normalize;
 use crate::parser::parse;
 use crate::rustfmt::format;
@@ -26,8 +28,10 @@ struct Opt {
     #[structopt(short, long)]
     src: PathBuf,
 }
+*/
 
 fn main() {
+    /*
     let opt = Opt::from_args();
     let mut file = File::open(opt.src).expect("invalid file path");
     let mut contents = String::new();
@@ -43,4 +47,5 @@ fn main() {
 
     let sequentialized = sequentialize(&normalized);
     println!("sequentialized: {:?}", &sequentialized);
+    */
 }

@@ -8,6 +8,7 @@ use crate::ast::*;
 #[grammar = "lustre.pest"]
 pub struct LustreParser;
 
+/*
 fn parse_type(pair: Pair<Rule>) -> Type {
 	match pair.as_str() {
 		"unit" => Type::Unit,
@@ -197,3 +198,4 @@ pub fn parse(input: &str) -> Result<Vec<Node>, Error<Rule>> {
 	eprintln!("{:?}", pair);
 	Ok(parse_file(pair.next().unwrap()))
 }
+*/
