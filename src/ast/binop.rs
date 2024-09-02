@@ -19,6 +19,7 @@ pub enum Binop {
     Eq,
     And,
     Or,
+    Fby,
 }
 
 impl Binop {
@@ -35,6 +36,7 @@ impl Binop {
             Self::Eq => "==",
             Self::And => "&&",
             Self::Or => "||",
+            Self::Fby => "->",
         }
     }
 }
@@ -58,6 +60,7 @@ impl FromStr for Binop {
             "=" => Ok(Binop::Eq),
             "and" => Ok(Binop::And),
             "or" => Ok(Binop::Or),
+            "fby" => Ok(Binop::Fby),
             invalid => anyhow::bail!("invalid binop {invalid}"),
         }
     }

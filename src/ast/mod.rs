@@ -4,6 +4,7 @@
 //!
 //! Dot operators can be applied to floats (non-dot operators can be applied to integers).
 
+mod arg;
 mod binop;
 mod r#const;
 mod equation;
@@ -12,6 +13,7 @@ mod node;
 mod r#type;
 mod unop;
 
+pub use arg::{Arg, List as ArgList};
 pub use binop::Binop;
 pub use equation::Equation;
 pub use expr::Expr;

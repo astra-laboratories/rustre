@@ -9,7 +9,24 @@ use std::collections::HashMap;
 #[grammar = "lustre.pest"]
 pub struct Lustre;
 
+pub fn try_inner_pair(pair: Pair<Rule>) -> Result<Pair<Rule>, anyhow::Error> {
+    pair.into_inner()
+        .next()
+        .ok_or(anyhow::anyhow!("expected next pair"))
+}
+
 /*
+fn parse_type(pair: Pair<Rule>) -> Type {
+    match pair.as_str() {
+        "unit" => Type::Unit,
+        "bool" => Type::Bool,
+        "int" => Type::Int,
+        "float" => Type::Float,
+        "string" => Type::String,
+        _ => panic!("invalid type: {}", pair.as_str())
+    }
+}
+
 fn parse_arg(pair: Pair<Rule>) -> (Vec<String>, Type) {
     assert!(pair.as_rule() == Rule::arg);
 
@@ -30,6 +47,21 @@ fn parse_arg_list(pair: Pair<Rule>) -> HashMap<String, Type> {
         }
     }
     arg_list
+}
+
+fn parse_constant(pair: Pair<Rule>) -> Const {
+    match pair.as_rule() {
+        Rule::bool => match pair.as_str() {
+            "true" => Const::Bool(true),
+            "false" => Const::Bool(false),
+            _ => unreachable!(),
+        },
+        Rule::int => Const::Int(pair.as_str().parse::<i32>().unwrap()),
+        Rule::float => Const::Float(pair.as_str().parse::<f32>().unwrap()),
+        Rule::string => Const::String(pair.into_inner().next().unwrap().as_str().to_string()),
+        Rule::unit => Const::Unit,
+        _ => unreachable!(),
+    }
 }
 
 fn parse_local(pair: Pair<Rule>) -> HashMap<String, Type> {
