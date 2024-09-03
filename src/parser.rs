@@ -1,21 +1,10 @@
-pub use pest::Parser;
 pub use pest::iterators::{Pair, Pairs};
+pub use pest::Parser;
 use pest_derive::Parser as ParserT;
 
 #[derive(ParserT)]
 #[grammar = "lustre.pest"]
 pub struct Lustre;
-
-/// Attempts to descend into the pair and fetch the first element.
-///
-/// # Errors
-///
-/// Throws and error if the iterator is empty.
-pub fn try_inner_pair(pair: Pair<Rule>) -> Result<Pair<Rule>, anyhow::Error> {
-    pair.into_inner()
-        .next()
-        .ok_or(anyhow::anyhow!("expected next pair"))
-}
 
 /*
 fn parse_type(pair: Pair<Rule>) -> Type {

@@ -3,7 +3,7 @@ use crate::parser::{Pair, Rule};
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Type {
     Unit,
     Bool,
@@ -52,5 +52,28 @@ impl TryFrom<Pair<'_, Rule>> for Type {
     type Error = anyhow::Error;
     fn try_from(pair: Pair<Rule>) -> Result<Self, Self::Error> {
         Self::from_str(pair.as_str())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn display() {
+        assert_eq!(Type::Unit.to_string(), "()");
+        assert_eq!(Type::Bool.to_string(), "bool");
+        assert_eq!(Type::Int.to_string(), "i32");
+        assert_eq!(Type::Float.to_string(), "f32");
+        assert_eq!(Type::String.to_string(), "String");
+        assert_eq!(
+            Type::Tuple(vec![
+                Type::Unit,
+                Type::String,
+                Type::Tuple(vec![Type::Float, Type::Int])
+            ])
+            .to_string(),
+            "((),String,(f32,i32))"
+        );
     }
 }

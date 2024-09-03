@@ -4,7 +4,7 @@ use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
 
 /// Binary operators.
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Binop {
     Plus,
     Minus,
@@ -39,9 +39,16 @@ impl Binop {
             Self::Eq => "==",
             Self::And => "&&",
             Self::Or => "||",
-            Self::Fby => "->",
+            Self::Fby => "",
         }
     }
+
+    /*
+    pub fn as_rs_str(&self) -> &str {
+        // TODO as_str should return from_str
+        todo!("do we need this")
+    }
+    */
 }
 
 impl FromStr for Binop {

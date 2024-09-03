@@ -2,7 +2,7 @@ use crate::parser::{Pair, Rule};
 
 use std::fmt::{self, Display, Formatter};
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Const {
     Unit,
     Bool(bool),

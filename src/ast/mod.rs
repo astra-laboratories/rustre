@@ -22,19 +22,37 @@ pub use r#const::Const;
 pub use r#type::Type;
 pub use unop::Unop;
 
+use crate::next;
 use crate::parser::{Lustre, Parser, Rule};
 
-use anyhow::anyhow;
-
+use std::fs::File;
+use std::io::Read;
+use std::path::PathBuf;
 use std::str::FromStr;
 
+#[derive(Clone, Debug)]
 pub struct Ast(pub Vec<Node>);
 
 impl FromStr for Ast {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut pair = Lustre::parse(Rule::file, s)?;
-        let nodes = NodeList::try_from(pair.next().ok_or(anyhow!("expected next pair"))?)?;
+        let nodes = NodeList::try_from(next!(pair))?;
         Ok(Self(nodes.into_inner()))
+    }
+}
+
+impl Ast {
+    /// Attempts to read the contents of a Lustre file into an AST.
+    ///
+    /// # Errors
+    ///
+    /// Throws an error if the file cannot be opened or its contents cannot be read.
+    pub fn read(path: PathBuf) -> Result<Self, anyhow::Error> {
+        let mut file = File::open(path)?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+
+        Self::from_str(&contents)
     }
 }

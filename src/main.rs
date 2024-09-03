@@ -11,15 +11,10 @@ pub mod parser;
 //mod sequentializer;
 //mod typer;
 
-//use crate::normalizer::normalize;
-//use crate::parser::parse;
-//use crate::rustfmt::format;
-//use crate::sequentializer::sequentialize;
+use crate::ast::Ast;
 
 use structopt::StructOpt;
 
-use std::fs::File;
-use std::io::Read;
 use std::path::PathBuf;
 
 #[derive(Debug, StructOpt)]
@@ -30,11 +25,8 @@ struct Opt {
 
 fn main() {
     let opt = Opt::from_args();
-    let mut file = File::open(opt.src).expect("invalid file path");
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)
-        .expect("couldn't read file");
-    println!("RAW LUSTRE\n{contents:?}\n");
+    let ast = Ast::read(opt.src).expect("invalid lustre input");
+    println!("{ast:#?}");
 
     /*
     let parsed = parse(&contents).unwrap();
@@ -46,4 +38,31 @@ fn main() {
     let sequentialized = sequentialize(&normalized);
     println!("sequentialized: {:?}", &sequentialized);
     */
+}
+
+#[macro_export]
+macro_rules! next {
+    ($pair:expr, "uw") => {
+        $pair.next().unwrap()
+    };
+    ($pair:expr, "ok") => {
+        $pair.next().ok_or(anyhow::anyhow!("expected next pair"))?
+    };
+    ($pair:expr) => {
+        next!($pair, "ok")
+    };
+}
+
+#[macro_export]
+macro_rules! next_string {
+    ($pair:expr) => {
+        next!($pair).as_str().to_string()
+    };
+}
+
+#[macro_export]
+macro_rules! inner {
+    ($pair:expr) => {
+        next!($pair.into_inner())
+    };
 }

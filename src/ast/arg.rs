@@ -1,11 +1,12 @@
 use crate::ast::Type;
+use crate::next;
 use crate::parser::{Pair, Rule};
 
-use anyhow::{anyhow, ensure};
+use anyhow::ensure;
 
 use std::collections::HashMap;
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Arg {
     pub typ: Type,
     pub names: Vec<String>,
@@ -15,19 +16,17 @@ impl TryFrom<Pair<'_, Rule>> for Arg {
     type Error = anyhow::Error;
     fn try_from(pair: Pair<Rule>) -> Result<Self, Self::Error> {
         ensure!(pair.as_rule() == Rule::arg, "expected arg rule");
-        let mut rules_iter = pair.into_inner();
-        let name_rules = rules_iter.next().ok_or(anyhow!("expected name rules"))?;
-        let type_rules = rules_iter.next().ok_or(anyhow!("expected type rules"))?;
-        let names = name_rules
+        let mut inner = pair.into_inner();
+        let names = next!(inner)
             .into_inner()
             .map(|p| p.as_str().to_string())
             .collect();
-        let typ = Type::try_from(type_rules)?;
+        let typ = Type::try_from(next!(inner))?;
         Ok(Self { typ, names })
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct List(HashMap<String, Type>);
 
 impl List {
@@ -62,7 +61,7 @@ impl TryFrom<Pair<'_, Rule>> for List {
 }
 
 // TODO more descriptive name?
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Local(pub HashMap<String, Type>);
 
 impl Local {

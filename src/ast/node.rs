@@ -1,7 +1,8 @@
 use crate::ast::{ArgList, EquationList, Local};
 use crate::parser::{Pair, Rule};
+use crate::{next, next_string};
 
-use anyhow::{anyhow, ensure};
+use anyhow::ensure;
 
 #[derive(Debug, Clone)]
 pub struct Node {
@@ -18,15 +19,11 @@ impl TryFrom<Pair<'_, Rule>> for Node {
         ensure!(pair.as_rule() == Rule::node, "expected node rule");
         let mut inner = pair.into_inner();
         Ok(Self {
-            name: inner
-                .next()
-                .ok_or(anyhow!("expected next rule"))?
-                .as_str()
-                .to_string(),
-            args_in: ArgList::try_from(inner.next().ok_or(anyhow!("expected next rule"))?)?,
-            args_out: ArgList::try_from(inner.next().ok_or(anyhow!("expected next rule"))?)?,
-            local: Local::try_from(inner.next().ok_or(anyhow!("expected next rule"))?)?,
-            body: EquationList::try_from(inner.next().ok_or(anyhow!("expected next rule"))?)?,
+            name: next_string!(inner),
+            args_in: ArgList::try_from(next!(inner))?,
+            args_out: ArgList::try_from(next!(inner))?,
+            local: Local::try_from(next!(inner))?,
+            body: EquationList::try_from(next!(inner))?,
         })
     }
 }

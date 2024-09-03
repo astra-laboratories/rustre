@@ -1,7 +1,8 @@
 use crate::ast::Expr;
+use crate::next;
 use crate::parser::{Pair, Rule};
 
-use anyhow::{anyhow, ensure};
+use anyhow::ensure;
 
 #[derive(Debug, Clone)]
 pub struct Equation {
@@ -14,13 +15,11 @@ impl TryFrom<Pair<'_, Rule>> for Equation {
     fn try_from(pair: Pair<Rule>) -> Result<Self, Self::Error> {
         ensure!(pair.as_rule() == Rule::eq, "expected equation rule");
         let mut inner = pair.into_inner();
-        let names = inner
-            .next()
-            .ok_or(anyhow!("expected next pair"))?
+        let names = next!(inner)
             .into_inner()
             .map(|pair| pair.as_str().to_string())
             .collect();
-        let body = Expr::try_from(inner.next().ok_or(anyhow!("expected next pair"))?)?;
+        let body = Expr::try_from(next!(inner))?;
         Ok(Self { names, body })
     }
 }
