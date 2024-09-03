@@ -1,14 +1,16 @@
-use crate::ast::*;
-use pest::error::Error;
-pub use pest::iterators::Pair;
-use pest::Parser;
+pub use pest::Parser;
+pub use pest::iterators::{Pair, Pairs};
 use pest_derive::Parser as ParserT;
-use std::collections::HashMap;
 
 #[derive(ParserT)]
 #[grammar = "lustre.pest"]
 pub struct Lustre;
 
+/// Attempts to descend into the pair and fetch the first element.
+///
+/// # Errors
+///
+/// Throws and error if the iterator is empty.
 pub fn try_inner_pair(pair: Pair<Rule>) -> Result<Pair<Rule>, anyhow::Error> {
     pair.into_inner()
         .next()

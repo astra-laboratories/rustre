@@ -3,10 +3,10 @@
 #![deny(clippy::dbg_macro)]
 #![deny(unused_crate_dependencies)]
 
-mod ast;
-mod nast;
+pub mod ast;
+//pub mod nast;
 //mod normalizer;
-mod parser;
+pub mod parser;
 //mod rustfmt;
 //mod sequentializer;
 //mod typer;

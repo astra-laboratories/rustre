@@ -12,6 +12,7 @@ pub enum Unop {
 }
 
 impl Unop {
+    #[must_use]
     pub fn as_str(&self) -> &str {
         match self {
             Self::Minus | Self::MinusDot => "-",

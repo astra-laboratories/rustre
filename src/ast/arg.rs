@@ -31,10 +31,12 @@ impl TryFrom<Pair<'_, Rule>> for Arg {
 pub struct List(HashMap<String, Type>);
 
 impl List {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    #[must_use]
     pub fn map(&self) -> &HashMap<String, Type> {
         &self.0
     }
@@ -59,10 +61,12 @@ impl TryFrom<Pair<'_, Rule>> for List {
     }
 }
 
+// TODO more descriptive name?
 #[derive(Clone, Debug, Default)]
-pub struct Local(HashMap<String, Type>);
+pub struct Local(pub HashMap<String, Type>);
 
 impl Local {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }

@@ -1,3 +1,5 @@
+use crate::parser::{Pair, Rule};
+
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
 
@@ -23,6 +25,7 @@ pub enum Binop {
 }
 
 impl Binop {
+    #[must_use]
     pub fn as_str(&self) -> &str {
         match self {
             Self::Plus | Self::PlusDot => "+",
@@ -63,6 +66,13 @@ impl FromStr for Binop {
             "fby" => Ok(Binop::Fby),
             invalid => anyhow::bail!("invalid binop {invalid}"),
         }
+    }
+}
+
+impl TryFrom<Pair<'_, Rule>> for Binop {
+    type Error = anyhow::Error;
+    fn try_from(pair: Pair<Rule>) -> Result<Self, Self::Error> {
+        Self::from_str(pair.as_str())
     }
 }
 
