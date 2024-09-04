@@ -1,5 +1,6 @@
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
-COMMENT = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+COMMENT = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" | "--" ~ (!"\n" ~ ANY)* }
+SKIP = _{ WHITESPACE | COMMENT }
 
 ident = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
 arg_idents = { ident ~ ("," ~ ident)* }

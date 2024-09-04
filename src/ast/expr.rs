@@ -192,8 +192,7 @@ mod test {
 
     #[test]
     fn parse_if() {
-        // TODO why can't this be parsed??
-        let input = "if initialized then print(\"hello\") else;";
+        let input = "if true then print(\"hello\") else print(\"world\");";
         let mut pair = Lustre::parse(Rule::ifrule, input).unwrap();
         assert_eq!(
             Expr::parse_if(next!(pair, "uw")).unwrap(),

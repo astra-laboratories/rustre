@@ -3,7 +3,7 @@ pub use pest::Parser;
 use pest_derive::Parser as ParserT;
 
 #[derive(ParserT)]
-#[grammar = "lustre.pest"]
+#[grammar = "../pest/mlustre.pest"]
 pub struct Lustre;
 
 /*
