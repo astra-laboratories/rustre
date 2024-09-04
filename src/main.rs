@@ -4,8 +4,8 @@
 #![deny(unused_crate_dependencies)]
 
 pub mod ast;
-//pub mod nast;
-//mod normalizer;
+pub mod nast;
+mod normalizer;
 pub mod parser;
 //mod rustfmt;
 //mod sequentializer;
