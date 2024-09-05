@@ -1,32 +1,44 @@
-// Rust code formatting
-//
-// Writes Rust code from a normalized and scheduled AST.
-//
-// This also compiles `fby` operators. This is the most interesting step.
-//
-// First, each node is assigned a memory if needed. This is done by the `get_node_mem` function,
-// which returns a `NodeMemory`. A node memory will contain two kind of objects:
-//
-// - One field per `fby` operator, which is initialized with the constant on the left of the
-//   operator
-// - One field per function call, which contains the memory of the callee
-//
-// Each node will translate to a Rust function and will take a mutable reference to its memory as
-// the first parameter.
-//
-// Once each node has a memory, we can start generating code.
-//
-// When generating a node's code, we replace `fby` operators to an access to the memory field. We
-// also add a function footer to update `fby` memory fields to their next value (expression on the
-// right of `fby`).
-//
-// When calling another node, we borrow a mutable reference to the call memory field. This is
-// possible because we have a mutable reference to our own memory. We provide this "sub-reference"
-// to the callee.
+//! Rust code generation.
+//!
+//! Generates Rust code from a normalized and scheduled AST.
+//!
+//! This also compiles `fby` operators. This is the most interesting step.
+//!
+//! First, each node is assigned a memory if needed. This is done by the `get_node_mem` function,
+//! which returns a `NodeMemory`. A node memory will contain two kind of objects:
+//!
+//! - One field per `fby` operator, which is initialized with the constant on the left of the
+//!   operator
+//! - One field per function call, which contains the memory of the callee
+//!
+//! Each node will translate to a Rust function and will take a mutable reference to its memory as
+//! the first parameter.
+//!
+//! Once each node has a memory, we can start generating code.
+//!
+//! When generating a node's code, we replace `fby` operators to an access to the memory field. We
+//! also add a function footer to update `fby` memory fields to their next value (expression on the
+//! right of `fby`).
+//!
+//! When calling another node, we borrow a mutable reference to the call memory field. This is
+//! possible because we have a mutable reference to our own memory. We provide this "sub-reference"
+//! to the callee.
 
+use crate::ast::{Expr, Const};
+
+pub struct Memory {
+	pub name: String,
+	/// Name and type of each field
+	pub fields: HashMap<String, String>,
+	pub init_values: HashMap<String, Vec<Const>>,
+	pub next_values: HashMap<String, Expr>,
+}
+
+
+
+/*
 use std::collections::HashMap;
 use std::io::{Write, Result};
-use crate::nast::*;
 use crate::typer::type_of_const;
 
 fn format_expr(w: &mut Write, e: &Expr, dest: &[String], mems: &HashMap<String, NodeMemory>) -> Result<()> {
@@ -341,3 +353,4 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 	}
 	write!(w, "}}\n")
 }
+*/

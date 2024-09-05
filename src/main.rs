@@ -4,12 +4,10 @@
 #![deny(unused_crate_dependencies)]
 
 pub mod ast;
-pub mod nast;
+pub mod codegen;
 pub mod normalizer;
 pub mod parser;
-//mod rustfmt;
 pub mod sequentializer;
-//mod typer;
 
 use crate::ast::Ast;
 
@@ -25,7 +23,7 @@ struct Opt {
 
 fn main() {
     let opt = Opt::from_args();
-    let mut ast = Ast::read(opt.src).expect("invalid lustre input");
+    let mut ast = Ast::build(opt.src).expect("invalid lustre input");
     println!("RAW\n\n{ast:#?}");
 
     ast.normalize();
@@ -34,16 +32,7 @@ fn main() {
     ast.order();
     println!("ORD\n\n{ast:#?}");
 
-    /*
-    let parsed = parse(&contents).unwrap();
-    println!("parsed: {:?}", &parsed);
-
-    let normalized = normalize(&parsed);
-    println!("normalized: {:?}", &normalized);
-
-    let sequentialized = sequentialize(&normalized);
-    println!("sequentialized: {:?}", &sequentialized);
-    */
+    println!("RUST\n\n{:#?}", ast.codegen());
 }
 
 #[macro_export]

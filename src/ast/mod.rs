@@ -48,7 +48,7 @@ impl Ast {
     /// # Errors
     ///
     /// Throws an error if the file cannot be opened or its contents cannot be read.
-    pub fn read(path: PathBuf) -> Result<Self, anyhow::Error> {
+    pub fn build(path: PathBuf) -> Result<Self, anyhow::Error> {
         let mut file = File::open(path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
@@ -62,5 +62,10 @@ impl Ast {
 
     pub fn order(&mut self) {
         self.0.iter_mut().for_each(Node::order);
+    }
+
+    #[must_use]
+    pub fn codegen(&self) -> String {
+        todo!();
     }
 }
