@@ -5,3 +5,4 @@ pub struct Equation {
     pub names: Vec<String>,
     pub body: Expr,
 }
+

@@ -1,4 +1,5 @@
 use crate::ast::{Binop, Const, Unop};
+use crate::normalizer::Normalizer;
 use crate::parser::{Pair, Rule};
 use crate::{inner, next, next_string};
 
@@ -130,6 +131,59 @@ impl Expr {
             }
         } else {
             Ok(lhs)
+        }
+    }
+
+    pub fn normalize(&mut self, normalizer: &mut Normalizer) {
+        match self {
+            // NOTE do nothing with these
+            Self::Const(_) | Self::Ident(_) => return,
+            Self::Unop(_, e) => e.normalize(normalizer),
+            Self::Call { args, .. } => args.iter_mut().for_each(|e| e.normalize(normalizer)),
+            Self::Binop(_, lhs, rhs) | Self::Fby(lhs, rhs) => {
+                lhs.normalize(normalizer);
+                rhs.normalize(normalizer);
+            }
+            Self::If {
+                condition,
+                if_body,
+                else_body,
+            } => {
+                condition.normalize(normalizer);
+                if_body.normalize(normalizer);
+                else_body.normalize(normalizer);
+            }
+            Self::Tuple(exprs) => exprs.iter_mut().for_each(|e| e.normalize(normalizer)),
+        }
+        let name = normalizer.next_tmp();
+        normalizer.memory.insert(name.clone(), self.clone());
+    }
+
+    #[must_use]
+    pub fn dependencies(&self) -> Vec<String> {
+        match self {
+            Self::Ident(id) => vec![id.to_string()],
+            Self::Const(_) => vec![],
+            Self::Unop(_, expr) => expr.dependencies(),
+            Self::Binop(_, lhs, rhs) => {
+                let mut deps = lhs.dependencies();
+                deps.append(&mut rhs.dependencies());
+                deps
+            }
+            Self::If {
+                condition,
+                if_body,
+                else_body,
+            } => {
+                let mut deps = condition.dependencies();
+                deps.append(&mut if_body.dependencies());
+                deps.append(&mut else_body.dependencies());
+                deps
+            }
+            Self::Tuple(exprs) | Self::Call { args: exprs, .. } => {
+                exprs.iter().flat_map(Self::dependencies).collect()
+            }
+            Self::Fby(lhs, _) => lhs.dependencies(),
         }
     }
 }

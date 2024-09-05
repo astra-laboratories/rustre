@@ -13,7 +13,7 @@ mod node;
 mod r#type;
 mod unop;
 
-pub use arg::{Arg, List as ArgList, Local};
+pub use arg::{Arg, List as ArgList, Locals};
 pub use binop::Binop;
 pub use equation::{Equation, List as EquationList};
 pub use expr::Expr;
@@ -54,5 +54,13 @@ impl Ast {
         file.read_to_string(&mut contents)?;
 
         Self::from_str(&contents)
+    }
+
+    pub fn normalize(&mut self) {
+        self.0.iter_mut().for_each(Node::normalize);
+    }
+
+    pub fn order(&mut self) {
+        self.0.iter_mut().for_each(Node::order);
     }
 }

@@ -1,5 +1,6 @@
 use crate::ast::Expr;
 use crate::next;
+use crate::normalizer::Normalizer;
 use crate::parser::{Pair, Rule};
 
 use anyhow::ensure;
@@ -8,6 +9,17 @@ use anyhow::ensure;
 pub struct Equation {
     pub names: Vec<String>,
     pub body: Expr,
+}
+
+impl Equation {
+    pub fn normalize(&mut self, normalizer: &mut Normalizer) {
+        self.body.normalize(normalizer);
+    }
+
+    #[must_use]
+    pub fn dependencies(&self) -> Vec<String> {
+        self.body.dependencies()
+    }
 }
 
 impl TryFrom<Pair<'_, Rule>> for Equation {
@@ -26,6 +38,12 @@ impl TryFrom<Pair<'_, Rule>> for Equation {
 
 #[derive(Debug, Clone)]
 pub struct List(pub Vec<Equation>);
+
+impl AsRef<[Equation]> for List {
+    fn as_ref(&self) -> &[Equation] {
+        &self.0
+    }
+}
 
 impl TryFrom<Pair<'_, Rule>> for List {
     type Error = anyhow::Error;

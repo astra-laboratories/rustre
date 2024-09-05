@@ -27,7 +27,7 @@ impl TryFrom<Pair<'_, Rule>> for Arg {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct List(HashMap<String, Type>);
+pub struct List(pub HashMap<String, Type>);
 
 impl List {
     #[must_use]
@@ -47,6 +47,12 @@ impl List {
     }
 }
 
+impl AsRef<HashMap<String, Type>> for List {
+    fn as_ref(&self) -> &HashMap<String, Type> {
+        &self.0
+    }
+}
+
 impl TryFrom<Pair<'_, Rule>> for List {
     type Error = anyhow::Error;
     fn try_from(pair: Pair<Rule>) -> Result<Self, Self::Error> {
@@ -62,29 +68,29 @@ impl TryFrom<Pair<'_, Rule>> for List {
 
 // TODO more descriptive name?
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct Local(pub HashMap<String, Type>);
+pub struct Locals(pub HashMap<String, Type>);
 
-impl Local {
+impl Locals {
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 }
 
-impl TryFrom<Pair<'_, Rule>> for Local {
+impl TryFrom<Pair<'_, Rule>> for Locals {
     type Error = anyhow::Error;
     fn try_from(pair: Pair<Rule>) -> Result<Self, Self::Error> {
         ensure!(pair.as_rule() == Rule::local, "expected local rule");
         let local = if let Some(inner) = pair.into_inner().next() {
-            Local::from(List::try_from(inner)?)
+            Locals::from(List::try_from(inner)?)
         } else {
-            Local::new()
+            Locals::new()
         };
         Ok(local)
     }
 }
 
-impl From<List> for Local {
+impl From<List> for Locals {
     fn from(list: List) -> Self {
         Self(list.0)
     }

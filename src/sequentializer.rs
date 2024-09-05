@@ -24,165 +24,248 @@
 //    If it has we can append this equation to the body
 //    We repeat this until all the equations are placed in the body.
 
-use std::collections::HashMap;
-use std::collections::VecDeque;
-use crate::nast::*;
+use crate::ast::Node;
+use std::collections::{HashMap, HashSet, VecDeque};
+
+#[derive(Clone, Debug, Default)]
+pub struct Sequentializer {
+    pub dependencies: HashMap<String, Vec<String>>,
+}
+
+impl Sequentializer {
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Builds a dependency graph from a node.
+    ///
+    /// # Panics
+    ///
+    /// Panics if a dependency is defined by multiple equations in the same node.
+    #[must_use]
+    pub fn build(node: &Node) -> Self {
+        // TODO can this be nicer?
+        let mut dependencies = HashMap::new();
+        for eq in node.body.as_ref() {
+            let deps = eq.dependencies();
+            for name in &eq.names {
+                assert!(
+                    !dependencies.contains_key(name),
+                    "Multiple equations define `{}` in node `{}`",
+                    name,
+                    node.name
+                );
+                dependencies.insert(name.clone(), deps.clone());
+            }
+        }
+        Self { dependencies }
+    }
+
+    #[must_use]
+    pub fn propagate(self) -> Self {
+        // TODO can this be nicer?
+        let dependencies = self
+            .dependencies
+            .clone()
+            .into_iter()
+            .map(|(key, value)| {
+                let mut queue = VecDeque::from(value);
+                let mut agg = HashSet::<String>::new();
+                while let Some(first) = queue.pop_front() {
+                    if let Some(vals) = self.dependencies.get(&first) {
+                        for val in vals {
+                            if !(agg.contains(val) || queue.contains(val)) {
+                                queue.push_back(val.clone());
+                            }
+                        }
+                    }
+                    if !agg.contains(&first) {
+                        agg.insert(first);
+                    }
+                }
+                (key, agg.into_iter().collect())
+            })
+            .collect();
+        Self { dependencies }
+    }
+
+    /// Checks if the dependency graph is free of circular dependencies.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the dependency graph contains circular dependencies.
+    #[must_use]
+    pub fn check(self) -> Self {
+        assert!(
+            !self
+                .dependencies
+                .iter()
+                .any(|(key, value)| value.contains(key)),
+            "circular dependency detected"
+        );
+        self
+    }
+}
+
+/*
 
 fn find_dep_atom(a: &Atom) -> Vec<String> {
-	match a {
-		Atom::Ident(s) => vec!{s.to_string()},
-		Atom::Const(_) => vec!{},
-	}
+    match a {
+        Atom::Ident(s) => vec!{s.to_string()},
+        Atom::Const(_) => vec!{},
+    }
 }
 
 fn find_dep_bexpr(e: &Bexpr) -> Vec<String> {
-	match e {
-		Bexpr::Unop(_, e) => find_dep_bexpr(e),
-		Bexpr::Binop(_, exprs) => {
-			let (e1, e2): &(Bexpr, Bexpr) = &*exprs;
-			let mut v1 = find_dep_bexpr(e1);
-			v1.append(&mut find_dep_bexpr(e2));
-			v1
-		},
-		Bexpr::If(exprs) => {
-			let (e1, e2, e3): &(Bexpr, Bexpr, Bexpr) = &*exprs;
-			let mut v1 = find_dep_bexpr(e1);
-			v1.append(&mut find_dep_bexpr(e2));
-			v1.append(&mut find_dep_bexpr(e3));
-			v1
-		},
-		Bexpr::Tuple(vexpr) => { // may be improved in some cases (ie: Tuple = Tuple)
-			let v = vexpr.iter().map(find_dep_bexpr);
-			v.into_iter().flatten().collect()
-		},
-		Bexpr::Atom(a) => find_dep_atom(a),
-	}
+    match e {
+        Bexpr::Unop(_, e) => find_dep_bexpr(e),
+        Bexpr::Binop(_, exprs) => {
+            let (e1, e2): &(Bexpr, Bexpr) = &*exprs;
+            let mut v1 = find_dep_bexpr(e1);
+            v1.append(&mut find_dep_bexpr(e2));
+            v1
+        },
+        Bexpr::If(exprs) => {
+            let (e1, e2, e3): &(Bexpr, Bexpr, Bexpr) = &*exprs;
+            let mut v1 = find_dep_bexpr(e1);
+            v1.append(&mut find_dep_bexpr(e2));
+            v1.append(&mut find_dep_bexpr(e3));
+            v1
+        },
+        Bexpr::Tuple(vexpr) => { // may be improved in some cases (ie: Tuple = Tuple)
+            let v = vexpr.iter().map(find_dep_bexpr);
+            v.into_iter().flatten().collect()
+        },
+        Bexpr::Atom(a) => find_dep_atom(a),
+    }
 }
 
 // Finds the direct dependencies to compute the equation
 fn find_dep_eq(e: &Equation) -> Vec<String> {
-	match &e.body {
-		Expr::Bexpr(be) => find_dep_bexpr(&be),
-		Expr::Call{name:_, args} => {
-			let v = args.iter().map(find_dep_bexpr);
-			v.into_iter().flatten().collect()
-		},
-		Expr::Fby(vexpr1, vexpr2) => {
-			if vexpr1.len() != vexpr2.len() {
-				panic!("Expected same tuple size on fby")
-			}
-			let v = vexpr1.iter().map(find_dep_atom);
-			v.into_iter().flatten().collect()
-		},
-	}
+    match &e.body {
+        Expr::Bexpr(be) => find_dep_bexpr(&be),
+        Expr::Call{name:_, args} => {
+            let v = args.iter().map(find_dep_bexpr);
+            v.into_iter().flatten().collect()
+        },
+        Expr::Fby(vexpr1, vexpr2) => {
+            if vexpr1.len() != vexpr2.len() {
+                panic!("Expected same tuple size on fby")
+            }
+            let v = vexpr1.iter().map(find_dep_atom);
+            v.into_iter().flatten().collect()
+        },
+    }
 }
 
 // propagates the dependencies for each equation
 fn propagate(deps: &HashMap<String, Vec<String>>) -> HashMap<String, Vec<String>> {
-	let mut finaldeps = HashMap::new();
+    let mut finaldeps = HashMap::new();
 
-	for (key, values) in deps {
-		let mut todo = VecDeque::from(values.clone());
-		let mut alldeps = vec!{};
+    for (key, values) in deps {
+        let mut todo = VecDeque::from(values.clone());
+        let mut alldeps = vec!{};
 
-		// while the queue [todo] is not empty
-		while !todo.is_empty() {
-			let d = todo.pop_front().unwrap();
-			if deps.contains_key(&d) {
-				let values = deps.get(&d).unwrap();
-				for dnext in values {
-					// don't add if already done or to be done
-					if !alldeps.contains(dnext) && !todo.contains(dnext) {
-						todo.push_back(dnext.to_string()); // add the dependecies
-					}
-				}
-			}
-			// adds the current value as done
-			if !alldeps.contains(&d) {
-				alldeps.push(d);
-			}
-		}
-		finaldeps.insert(key.to_string(), alldeps);
-	}
-	finaldeps
+        // while the queue [todo] is not empty
+        while !todo.is_empty() {
+            let d = todo.pop_front().unwrap();
+            if deps.contains_key(&d) {
+                let values = deps.get(&d).unwrap();
+                for dnext in values {
+                    // don't add if already done or to be done
+                    if !alldeps.contains(dnext) && !todo.contains(dnext) {
+                        todo.push_back(dnext.to_string()); // add the dependecies
+                    }
+                }
+            }
+            // adds the current value as done
+            if !alldeps.contains(&d) {
+                alldeps.push(d);
+            }
+        }
+        finaldeps.insert(key.to_string(), alldeps);
+    }
+    finaldeps
 }
 
 // orders the equations using the dependency graph
 fn order(n: &Node, mut alldeps: HashMap<String, Vec<String>>) -> Vec<Equation> {
-	let mut orderedEqs = Vec::new();
+    let mut orderedEqs = Vec::new();
 
-	while !alldeps.is_empty() {
-		let mut remove = Vec::new();
+    while !alldeps.is_empty() {
+        let mut remove = Vec::new();
 
-		for (var, deps) in &alldeps {
-			let mut ok = true;
-			// Compute: if the dependecies have been met by previously added equations and inputs
-			for dep in deps {
-				let isPrevEq = orderedEqs.iter().fold(false, |r, val: &Equation| {
-					r || val.names.contains(&dep)
-				});
-				ok = ok && (n.args_in.contains_key(dep) || isPrevEq);
-			}
-			if ok { // if dependencies satisfied
-				// we put the corresponding equation as the next one to be computed
-				let eq = n.body.iter().find(|&eq1| eq1.names.contains(&var)).unwrap();
-				orderedEqs.push(eq.clone());
+        for (var, deps) in &alldeps {
+            let mut ok = true;
+            // Compute: if the dependecies have been met by previously added equations and inputs
+            for dep in deps {
+                let isPrevEq = orderedEqs.iter().fold(false, |r, val: &Equation| {
+                    r || val.names.contains(&dep)
+                });
+                ok = ok && (n.args_in.contains_key(dep) || isPrevEq);
+            }
+            if ok { // if dependencies satisfied
+                // we put the corresponding equation as the next one to be computed
+                let eq = n.body.iter().find(|&eq1| eq1.names.contains(&var)).unwrap();
+                orderedEqs.push(eq.clone());
 
-				for (k, _) in &alldeps {
-					if eq.names.contains(k) {
-						remove.push(k.clone());
-					}
-				}
-			}
-		}
+                for (k, _) in &alldeps {
+                    if eq.names.contains(k) {
+                        remove.push(k.clone());
+                    }
+                }
+            }
+        }
 
-		// removing variables that are also computed by the equation (in tuples)
-		// this works because all variables assigned in a tuple all have the same dependecies
-		for k in &remove {
-			alldeps.remove(k);
-		}
-	}
-	orderedEqs
+        // removing variables that are also computed by the equation (in tuples)
+        // this works because all variables assigned in a tuple all have the same dependecies
+        for k in &remove {
+            alldeps.remove(k);
+        }
+    }
+    orderedEqs
 }
 
 fn sequentialize_node(n: &Node) -> Node {
-	// Create dependency graph
-	let mut deps: HashMap<String, Vec<String>> = HashMap::new();
-	for eq in &n.body {
-		let dep = find_dep_eq(&eq);
-		for name in &eq.names {
-			if deps.contains_key(name) {
-				panic!("Two equations define `{}` in node `{}`", name, &n.name)
-			}
-			deps.insert(name.clone(), dep.clone());
-		}
-	}
+    // Create dependency graph
+    let mut deps: HashMap<String, Vec<String>> = HashMap::new();
+    for eq in &n.body {
+        let dep = find_dep_eq(&eq);
+        for name in &eq.names {
+            if deps.contains_key(name) {
+                panic!("Two equations define `{}` in node `{}`", name, &n.name)
+            }
+            deps.insert(name.clone(), dep.clone());
+        }
+    }
 
-	let alldeps = propagate(&deps);
+    let alldeps = propagate(&deps);
 
-	eprintln!("Depedencies for Node [{}]", n.name);
-	for (k, v) in &alldeps {
-		eprintln!("{} -> {:?}", k, v)
-	}
+    eprintln!("Depedencies for Node [{}]", n.name);
+    for (k, v) in &alldeps {
+        eprintln!("{} -> {:?}", k, v)
+    }
 
-	// Check if there is a solution to the ordering problem
-	for (key, deps) in &alldeps {
-		if deps.contains(key) {
-			panic!("Circular dependency detected in node `{}` for `{}` -> {:?}", &n.name, key, deps)
-		}
-	}
+    // Check if there is a solution to the ordering problem
+    for (key, deps) in &alldeps {
+        if deps.contains(key) {
+            panic!("Circular dependency detected in node `{}` for `{}` -> {:?}", &n.name, key, deps)
+        }
+    }
 
-	let orderedBody = order(&n, alldeps);
+    let orderedBody = order(&n, alldeps);
 
-	Node{
-		name: n.name.clone(),
-		args_in: n.args_in.clone(),
-		args_out: n.args_out.clone(),
-		locals: n.locals.clone(),
-		body: orderedBody,
-	}
+    Node{
+        name: n.name.clone(),
+        args_in: n.args_in.clone(),
+        args_out: n.args_out.clone(),
+        locals: n.locals.clone(),
+        body: orderedBody,
+    }
 }
 
 pub fn sequentialize(f: &[Node]) -> Vec<Node> {
-	f.iter().map(sequentialize_node).collect()
+    f.iter().map(sequentialize_node).collect()
 }
+*/

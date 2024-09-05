@@ -33,34 +33,25 @@
 // ```
 
 use crate::ast::Expr;
-use crate::nast::{Expr as Nexpr};
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
-#[derive(Clone, Debug, Default)]
-pub struct Intermediate(pub HashMap<String, Option<nast::Expr>>);
+#[derive(Debug, Default)]
+pub struct Normalizer {
+    pub counter: AtomicUsize,
+    pub memory: HashMap<String, Expr>,
+}
 
-impl Intermediate {
+impl Normalizer {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    #[must_use]
     pub fn next_tmp(&self) -> String {
-        format!("tmp_{}", self.len())
-    }
-
-    pub fn normalize_atom(&mut self, expr: ast::Expr) -> nast::Atom {
-        match expr {
-            ast::Expr::Const(c) => nast::Atom::Const(c),
-            ast::Expr::Ident(ident) => nast::Atom::Ident(ident),
-            _ => {
-                // Create a local variable to store the intermediate value
-                let name = self.next_tmp();
-                intermediates.insert(name.clone(), None); // Reserve this intermediate
-                let e = normalize_expr(e, intermediates);
-                intermediates.insert(name.clone(), Some(e));
-                Atom::Ident(name)
-            }
-        }
+        let i = self.counter.fetch_add(1, Ordering::SeqCst);
+        format!("tmp_{i}")
     }
 }
 

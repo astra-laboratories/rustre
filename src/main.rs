@@ -5,10 +5,10 @@
 
 pub mod ast;
 pub mod nast;
-mod normalizer;
+pub mod normalizer;
 pub mod parser;
 //mod rustfmt;
-//mod sequentializer;
+pub mod sequentializer;
 //mod typer;
 
 use crate::ast::Ast;
@@ -25,8 +25,14 @@ struct Opt {
 
 fn main() {
     let opt = Opt::from_args();
-    let ast = Ast::read(opt.src).expect("invalid lustre input");
-    println!("{ast:#?}");
+    let mut ast = Ast::read(opt.src).expect("invalid lustre input");
+    println!("RAW\n\n{ast:#?}");
+
+    ast.normalize();
+    println!("NRM\n\n{ast:#?}");
+
+    ast.order();
+    println!("ORD\n\n{ast:#?}");
 
     /*
     let parsed = parse(&contents).unwrap();
