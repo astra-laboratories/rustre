@@ -57,12 +57,12 @@ impl Memory {
                     }
                 }
                 Expr::Fby(lhs, rhs) => {
-                    let typ = match lhs.as_ref() {
-                        Expr::Const(c) => c.as_type(),
+                    let (c, typ) = match lhs.as_ref() {
+                        Expr::Const(c) => (c.to_owned(), c.as_type()),
                         _ => unreachable!(),
                     };
-                    init_values.insert(dest.clone(), lhs.clone());
-                    next_values.insert(dest.clone(), rhs.clone());
+                    init_values.insert(dest.clone(), vec![c]);
+                    next_values.insert(dest.clone(), *rhs.clone());
                     fields.insert(dest.clone(), typ.to_string());
                 }
                 _ => {}
@@ -70,12 +70,19 @@ impl Memory {
         }
 
         Self {
-            name: format!("Mem{}", capitalize(&n.name)),
-            fields: fields,
-            init_values: init_values,
-            next_values: next_values,
+            name: format!("Mem{}", capitalize(&node.name)),
+            fields,
+            init_values,
+            next_values,
         }
     }
+}
+
+fn capitalize(s: &str) -> String {
+    s.chars()
+        .enumerate()
+        .map(|(i, c)| if i == 0 { c.to_ascii_uppercase() } else { c })
+        .collect()
 }
 
 /*
