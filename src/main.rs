@@ -18,7 +18,7 @@ use crate::sequentializer::sequentialize;
 use structopt::StructOpt;
 
 use std::fs::File;
-use std::io::Read;
+use std::io::{stdout, Read};
 use std::path::PathBuf;
 
 #[derive(Debug, StructOpt)]
@@ -43,4 +43,6 @@ fn main() {
 
     let sequentialized = sequentialize(&normalized);
     println!("sequentialized: {:?}", &sequentialized);
+
+    format(&mut stdout(), &sequentialized).unwrap();
 }
