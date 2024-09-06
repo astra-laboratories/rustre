@@ -1,3 +1,4 @@
+use crate::ast::Type;
 use crate::parser::{Pair, Rule};
 
 use std::fmt::{self, Display, Formatter};
@@ -9,6 +10,19 @@ pub enum Const {
     Int(i32),
     Float(f32),
     String(String),
+}
+
+impl Const {
+    #[must_use]
+    pub fn as_type(&self) -> Type {
+        match self {
+            Self::Unit => Type::Unit,
+            Self::Bool(_) => Type::Bool,
+            Self::Int(_) => Type::Int,
+            Self::Float(_) => Type::Float,
+            Self::String(_) => Type::String,
+        }
+    }
 }
 
 impl TryFrom<Pair<'_, Rule>> for Const {

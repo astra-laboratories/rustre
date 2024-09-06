@@ -27,6 +27,11 @@ pub enum Expr {
 }
 
 impl Expr {
+    #[must_use]
+    pub fn from_vec(v: Vec<Self>) -> Self {
+        Self::from(v)
+    }
+
     /// Attempts to parse a call.
     ///
     /// # Errors
@@ -201,6 +206,20 @@ impl TryFrom<Pair<'_, Rule>> for Expr {
             Rule::expr_tuple => Self::parse_tuple(pair),
             Rule::expr => Self::parse_expr(pair),
             invalid => bail!("invalid expr pair {invalid:?}"),
+        }
+    }
+}
+
+impl From<Vec<Self>> for Expr {
+    fn from(mut exp_vec: Vec<Self>) -> Self {
+        if exp_vec.is_empty() {
+            Self::Const(Const::Unit)
+        } else if exp_vec.len() == 1 {
+            // NOTE unwrap is fine because we check the
+            // length
+            exp_vec.pop().unwrap()
+        } else {
+            Self::Tuple(exp_vec)
         }
     }
 }
